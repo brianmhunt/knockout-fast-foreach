@@ -104,8 +104,16 @@ FastForEach.prototype.dispose = function () {
 
 // If the array changes we register the change.
 FastForEach.prototype.onArrayChange = function (changeSet) {
-  var self = this;
-  ko.utils.arrayForEach(changeSet, function(change) {
+  var self = this, additions = [];
+  //Do deletions before additions to ensure correct indexes.
+  ko.utils.arrayForEach(changeSet, function (change) {
+      if (change.status === 'added') {
+        additions.push(change);
+      } else if (change.status === 'deleted') {
+        self.changeQueue.push(change);
+      }
+  });
+  ko.utils.arrayForEach(additions, function(change) {
     self.changeQueue.push(change);
   });
   this.registerChange();
