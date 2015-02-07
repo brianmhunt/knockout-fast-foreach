@@ -167,9 +167,10 @@ FastForEach.prototype.added = function (index, value) {
 FastForEach.prototype.deleted = function (index, value) {
   var ptr = this.lastNodesList[index],
       lastNode = this.lastNodesList[index + 1];
-  this.element.removeChild(ptr);
-  while ((ptr = ptr.nextSibling) && ptr !== lastNode) {
+  while (ptr && ptr !== lastNode) {
+    var nextSibling = ptr.nextSibling;
     this.element.removeChild(ptr);
+    ptr = nextSibling;
   }
   this.indexesToDelete.push(index);
 };
