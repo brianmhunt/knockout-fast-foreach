@@ -56,10 +56,8 @@ describe("applying bindings", function () {
     ko.applyBindings(ko.computed({
         read: function () { 
             if(toggle()){
-                console.log(list1);
                 return list1;
             } else {
-                console.log(list2);
                 return list2;
             }
         }
