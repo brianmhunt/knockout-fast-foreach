@@ -48,11 +48,25 @@ describe("applying bindings", function () {
     assert.equal($(target).find("li").length, 3)
   })
 
-  it("works with a computed observable", function () {
+  it("works with a computed observable that returns a plain array", function () {
     var target = $("<ul data-bind='fastForEach: $data'><li data-bind='text: $data'></li></div>");
-    var list = [1, 2, 3];
-    ko.applyBindings(ko.computed({read: function () { return list }}), target[0])
+    var list1 = [1, 2, 3];
+    var list2 = [1, 2, 3, 4, 5, 6];
+    var toggle = ko.observable(true);
+    ko.applyBindings(ko.computed({
+        read: function () { 
+            if(toggle()){
+                console.log(list1);
+                return list1;
+            } else {
+                console.log(list2);
+                return list2;
+            }
+        }
+    }), target[0])
     assert.equal($(target).find("li").length, 3)
+    toggle(false)
+    assert.equal($(target).find("li").length, 6)
   })
 
   it("applies bindings to the immediate child", function () {
