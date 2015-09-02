@@ -277,6 +277,16 @@ describe("observable array changes", function () {
     obs(['a', 'b', 'c'])
     assert.equal(div.text(), 'abc')
   })
+  
+  it("processes numerous changes with splice", function () {
+    ko.applyBindings(view, div[0]);
+    obs([5, 6, 7, 8, 9])
+    assert.equal(div.text(), '56789')
+    obs.splice(1, 2, 16, 17);
+    assert.equal(div.text(), '5161789')
+    obs.splice(0, 5, 'a', 'b', 'c');
+    assert.equal(div.text(), 'abc')
+  })
 
   it("processes numerous changes when bound to more elements", function () {
     ko.applyBindings(view, div[0]);

@@ -94,11 +94,20 @@ function valueToChangeAddItem(value, index) {
 }
 
 function isAdditionAdjacentToLast(changeIndex, arrayChanges) {
+  // there are two main cases when we should treat additions as adjacent:
+  // - simply both are additions with subsequent indexes
+  // - case 1, but one deletion between them on the higher index, because in the final array the two added items will be subsequent again, regardless of that deletion
+  // second case occurres many times for example when using the splice method, or completely refedining an array
   return changeIndex > 0 &&
     changeIndex < arrayChanges.length &&
     arrayChanges[changeIndex].status === "added" &&
-    arrayChanges[changeIndex - 1].status === "added" &&
-    arrayChanges[changeIndex - 1].index === arrayChanges[changeIndex].index - 1;
+    ((arrayChanges[changeIndex - 1].status === "added" &&
+    arrayChanges[changeIndex - 1].index === arrayChanges[changeIndex].index - 1) ||
+    (changeIndex - 2 >= 0 &&
+    arrayChanges[changeIndex - 1].status === "deleted" &&
+    arrayChanges[changeIndex - 1].index === arrayChanges[changeIndex].index &&
+    arrayChanges[changeIndex - 2].status === "added" &&
+    arrayChanges[changeIndex - 2].index === arrayChanges[changeIndex].index - 1));
 }
 
 function FastForEach(spec) {
