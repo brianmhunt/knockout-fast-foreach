@@ -250,12 +250,12 @@ FastForEach.prototype.createChildContext = function(data) {
     childContext = this.$context.extend({
       $item: data,
       $index: this.noIndex ? undefined : ko.observable(),
-      $container: this.container
+      $parentNode: this.container
   });
   } else {
     childContext = this.$context.createChildContext(data, this.as || null, this.noIndex ? undefined : function extendWithIndex(context) {
       context.$index = ko.observable();
-      context.$container = self.container
+      context.$parentNode = self.container
     });
   }
   return childContext;
