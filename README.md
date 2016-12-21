@@ -1,6 +1,8 @@
 ﻿knockout-fast-foreach
 =====================
 
+## NOTICE: This plugin has been incorporated into [tko](https://github.com/knockout/tko) as [tko.binding.foreach](https://github.com/knockout/tko.binding.foreach)
+
 An experiment in faster foreach binding.
 
 Include in your project in the usual ways, then instead of `foreach` use
