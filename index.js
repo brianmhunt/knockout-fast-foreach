@@ -368,22 +368,16 @@ FastForEach.prototype.getOrCreatePendingDeleteFor = function (data) {
 FastForEach.prototype.updated = function (changeItem) {
   var valuesToAdd = changeItem.isBatch ? changeItem.values : [changeItem.value];
   var referenceElements = this.getNodesForIndex(changeItem.index);
-  var childContext = this.getContextStartingFrom(referenceElements[0]);
+  var childContext;
 
-  if(childContext) {
-    childContext.$data = valuesToAdd[0];
-    childContext.$rawData = valuesToAdd[0];
+  if (this.noContext) {
+    childContext = this.$context.extend({
+      $item: valuesToAdd[0],
+      $index: this.noIndex ? undefined : ko.observable()
+    });
   }
   else {
-    if (this.noContext) {
-      childContext = this.$context.extend({
-        $item: valuesToAdd[0],
-        $index: this.noIndex ? undefined : ko.observable()
-      });
-    }
-    else {
-      childContext = this.$context.createChildContext(valuesToAdd[0], this.as || null, this.noIndex ? undefined : extendWithIndex);
-    }
+    childContext = this.$context.createChildContext(valuesToAdd[0], this.as || null, this.noIndex ? undefined : extendWithIndex);
   }
 
   for(var i = 0, iLimit = referenceElements.length; i < iLimit; i++) {

@@ -417,14 +417,16 @@ describe("observable array changes", function () {
       console.time("with move");
       obs.sort(function(a, b) { return a.id - b.id; })
       console.timeEnd("with move");
-      for (i = 0; i != itemNumber; ++i) {
-        arr[i].num = i;
-      }
-      assert.equal(div.children().length, itemNumber)
-      //assert.equal(div.children().filter(function() { return this.testprop == 10; }).length, itemNumber)
-      div.children().each(function(index) {
-        assert.equal(index, ko.dataFor(this).num)
-      })
+      setTimeout(function() {
+        for (i = 0; i != itemNumber; ++i) {
+          arr[i].num = i;
+        }
+        assert.equal(div.children().length, itemNumber)
+        assert.equal(div.children().filter(function() { return $(this).prop("testprop") == 10; }).length, itemNumber)
+        div.children().each(function(index) {
+          assert.equal(index, ko.dataFor(this).num)
+        })
+      }, 1);
     })
 
     it("Sort large complex array makes correct DOM order without move", function() {
@@ -571,7 +573,7 @@ describe("observable array changes", function () {
   })
 
   describe('afterAdd', function () {
-    it.skip("emits on changes to an observable array", function () {
+    it("emits on changes to an observable array", function () {
       var calls = 0;
       var nodes = 0
       var arr = ko.observableArray([])
@@ -585,7 +587,7 @@ describe("observable array changes", function () {
       assert.equal(nodes, 1)
       arr([2,3,4])
       assert.equal(calls, 2)
-      assert.equal(nodes, 4, 'n4')
+      assert.equal(nodes, 3, 'n4')
     })
 
     it("is called with initial data", function () {
