@@ -107,10 +107,10 @@ function FastForEach(spec) {
   ko.virtualElements.emptyNode(this.element);
 
   // Prime content
-  var primeData = ko.unwrap(this.data);
-  if (primeData.map) {
-    this.onArrayChange(primeData.map(valueToChangeAddItem), true);
-  }
+    var primeData = ko.unwrap(this.data);
+    if (primeData && primeData.map) {
+      this.onArrayChange(primeData.map(valueToChangeAddItem));
+    }
 
   // Watch for changes
   if (ko.isObservable(this.data)) {
