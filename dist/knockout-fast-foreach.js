@@ -108,7 +108,7 @@ function FastForEach(spec) {
 
   // Prime content
   var primeData = ko.unwrap(this.data);
-  if (primeData.map) {
+  if (primeData && primeData.map) {
     this.onArrayChange(primeData.map(valueToChangeAddItem), true);
   }
 
