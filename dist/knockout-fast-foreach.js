@@ -1,5 +1,5 @@
 /*!
-  Knockout Fast Foreach v0.6.0 (2016-07-28T11:02:54.197Z)
+  Knockout Fast Foreach v0.6.0 (2017-01-06T02:53:01.685Z)
   By: Brian M Hunt (C) 2015 | License: MIT
 
   Adds `fastForEach` to `ko.bindingHandlers`.
@@ -142,6 +142,7 @@ FastForEach.prototype.onArrayChange = function (changeSet, isInitial) {
   var self = this;
   var changeMap = {
     added: [],
+    updated: [],
     deleted: []
   };
 
@@ -151,11 +152,27 @@ FastForEach.prototype.onArrayChange = function (changeSet, isInitial) {
   // - sorts them all by index in ascending order
   // because of this, when checking for possible batch additions, any delete can be between to adds with neighboring indexes, so only additions should be checked
   for (var i = 0, len = changeSet.length; i < len; i++) {
+    var cs = changeSet[i], cs1 = changeSet[i + 1];
 
-    if (changeMap.added.length && changeSet[i].status == 'added') {
+    if (cs1 && (cs.status != cs1.status) && (cs.index == cs1.index)) {
+      // update the node
+      if(cs.status == 'added') {
+        cs.status = 'updated';
+        changeMap['updated'].push(cs);
+      }
+      else {
+        cs1.status = 'updated';
+        changeMap['updated'].push(cs1);
+      }
+
+      i++;
+      continue;
+    }
+
+    if (changeMap.added.length && cs.status == 'added') {
       var lastAdd = changeMap.added[changeMap.added.length - 1];
       var lastIndex = lastAdd.isBatch ? lastAdd.index + lastAdd.values.length - 1 : lastAdd.index;
-      if (lastIndex + 1 == changeSet[i].index) {
+      if (lastIndex + 1 == cs.index) {
         if (!lastAdd.isBatch) {
           // transform the last addition into a batch addition object
           lastAdd = {
@@ -166,19 +183,23 @@ FastForEach.prototype.onArrayChange = function (changeSet, isInitial) {
           };
           changeMap.added.splice(changeMap.added.length - 1, 1, lastAdd);
         }
-        lastAdd.values.push(changeSet[i].value);
+        lastAdd.values.push(cs.value);
         continue;
       }
     }
 
-    changeMap[changeSet[i].status].push(changeSet[i]);
+    changeMap[cs.status].push(cs);
   }
+
+  this.changeQueue.push.apply(this.changeQueue, changeMap.updated);
 
   if (changeMap.deleted.length > 0) {
     this.changeQueue.push.apply(this.changeQueue, changeMap.deleted);
     this.changeQueue.push({ status: 'clearDeletedIndexes' });
   }
+
   this.changeQueue.push.apply(this.changeQueue, changeMap.added);
+
   // Once a change is registered, the ticking count-down starts for the processQueue.
   if (this.changeQueue.length > 0 && !this.rendering_queued) {
     this.rendering_queued = true;
@@ -205,10 +226,12 @@ FastForEach.prototype.processQueue = function () {
     if (typeof changeItem.index === 'number') {
       lowestIndexChanged = Math.min(lowestIndexChanged, changeItem.index);
     }
+
     // console.log(self.data(), "CI", JSON.stringify(changeItem, null, 2), JSON.stringify($(self.element).text()))
     self[changeItem.status](changeItem);
     // console.log("  ==> ", JSON.stringify($(self.element).text()))
   });
+
   this.flushPendingDeletes();
   this.rendering_queued = false;
 
@@ -355,6 +378,32 @@ FastForEach.prototype.getOrCreatePendingDeleteFor = function (data) {
   data[PENDING_DELETE_INDEX_KEY] = this.pendingDeletes.length;
   this.pendingDeletes.push(pd);
   return pd;
+};
+
+// Process a changeItem with {status: 'updated', ...}
+FastForEach.prototype.updated = function (changeItem) {
+  var valuesToAdd = changeItem.isBatch ? changeItem.values : [changeItem.value];
+  var referenceElements = this.getNodesForIndex(changeItem.index);
+  var childContext;
+
+  if (this.noContext) {
+    childContext = this.$context.extend({
+      $item: valuesToAdd[0],
+      $index: this.noIndex ? undefined : ko.observable()
+    });
+  }
+  else {
+    childContext = this.$context.createChildContext(valuesToAdd[0], this.as || null, this.noIndex ? undefined : extendWithIndex);
+  }
+
+  for(var i = 0, iLimit = referenceElements.length; i < iLimit; i++) {
+    var el = referenceElements[i];
+
+    if((el.nodeType == 1) || (el.nodeType == 8)) {
+      ko.cleanNode(el);
+      ko.applyBindings(childContext, el);
+    }
+  }
 };
 
 // Process a changeItem with {status: 'deleted', ...}
