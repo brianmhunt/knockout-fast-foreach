@@ -208,12 +208,6 @@ FastForEach.prototype.processQueue = function () {
   this.changeQueue = [];
 };
 
-
-function extendWithIndex(context) {
-  context.$index = ko.observable();
-};
-
-
 // Process a changeItem with {status: 'added', ...}
 FastForEach.prototype.added = function (changeItem) {
   var index = changeItem.index;
@@ -231,19 +225,9 @@ FastForEach.prototype.added = function (changeItem) {
       childNodes = pendingDelete.nodesets.pop();
     } else {
       var templateClone = this.templateNode.cloneNode(true);
-      var childContext;
-
-      if (this.noContext) {
-        childContext = this.$context.extend({
-          $item: valuesToAdd[i],
-          $index: this.noIndex ? undefined : ko.observable()
-        });
-      } else {
-        childContext = this.$context.createChildContext(valuesToAdd[i], this.as || null, this.noIndex ? undefined : extendWithIndex);
-      }
-
+      
       // apply bindings first, and then process child nodes, because bindings can add childnodes
-      ko.applyBindingsToDescendants(childContext, templateClone);
+      ko.applyBindingsToDescendants(this.createChildContext(valuesToAdd[i]), templateClone);
 
       childNodes = ko.virtualElements.childNodes(templateClone);
     }
@@ -262,6 +246,23 @@ FastForEach.prototype.added = function (changeItem) {
   } else {
     this.insertAllAfter(allChildNodes, referenceElement);
   }
+};
+
+FastForEach.prototype.createChildContext = function(data) {
+  var childContext, self = this;
+  if (this.noContext) {
+    childContext = this.$context.extend({
+      $item: data,
+      $index: this.noIndex ? undefined : ko.observable(),
+      $parentNode: this.container
+  });
+  } else {
+    childContext = this.$context.createChildContext(data, this.as || null, this.noIndex ? undefined : function extendWithIndex(context) {
+      context.$index = ko.observable();
+      context.$parentNode = self.container
+    });
+  }
+  return childContext;
 };
 
 FastForEach.prototype.getNodesForIndex = function (index) {
