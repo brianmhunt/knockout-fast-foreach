@@ -87,9 +87,8 @@ function FastForEach(spec) {
                    this.element.parentNode : this.element;
   this.$context = spec.$context;
   this.data = spec.data;
-  this.as = spec.as;
-  this.noContext = spec.noContext;
-  this.noIndex = spec.noIndex;
+  this.generateContext = this.createContextGenerator(spec.as, !spec.noIndex);
+  if (spec.noIndex) { this.updateIndexes = false; }
   this.afterAdd = spec.afterAdd;
   this.beforeRemove = spec.beforeRemove;
   this.templateNode = makeTemplateNode(
@@ -205,17 +204,13 @@ FastForEach.prototype.processQueue = function () {
     if (typeof changeItem.index === 'number') {
       lowestIndexChanged = Math.min(lowestIndexChanged, changeItem.index);
     }
-    // console.log(self.data(), "CI", JSON.stringify(changeItem, null, 2), JSON.stringify($(self.element).text()))
     self[changeItem.status](changeItem);
-    // console.log("  ==> ", JSON.stringify($(self.element).text()))
   });
   this.flushPendingDeletes();
   this.rendering_queued = false;
 
   // Update our indexes.
-  if (!this.noIndex) {
-    this.updateIndexes(lowestIndexChanged);
-  }
+  if (this.updateIndexes) { this.updateIndexes(lowestIndexChanged); }
 
   // Callback so folks can do things.
   if (typeof this.afterQueueFlush === 'function') {
@@ -225,8 +220,49 @@ FastForEach.prototype.processQueue = function () {
 };
 
 
+// Extend the given context with a $index (passed in via the createChildContext)
 function extendWithIndex(context) {
-  context.$index = ko.observable();
+  $context.$index = ko.observable();
+};
+
+
+/**
+ * Return a function that generates the context for a given node.
+ *
+ * We generate a single function that reduces our inner-loop calculations,
+ * which has a good chance of being optimized by the browser.
+ *
+ * @param  {string} as  The name given to each item in the list
+ * @param  {bool} index Whether to calculate indexes
+ * @return {function}   A function(dataValue) that returns the context
+ */
+ForEach.prototype.createContextGenerator = function (as, index) {
+  var $context = this.$context;
+  switch ((as && 1) | (index && 2)) {
+  case 0: // no-as & no-index
+    return function(v) {
+      return $context.createChildContext(v, null, undefined);
+    };
+
+  case 1: // as + no-index
+    return function(v) {
+      var obj = { $index: undefined };
+      obj[as] = v;
+      return $context.extend(obj);
+    };
+
+  case 2: // no-as + index
+    return function(v) {
+      return $context.createChildContext(v, null, extendWithIndex);
+    };
+
+  case 3: // as + index
+    return function(v) {
+      var obj = { $index: observable() };
+      obj[as] = v;
+      return $context.extend(obj);
+    };
+  }
 };
 
 
@@ -247,19 +283,12 @@ FastForEach.prototype.added = function (changeItem) {
       childNodes = pendingDelete.nodesets.pop();
     } else {
       var templateClone = this.templateNode.cloneNode(true);
-      var childContext;
 
-      if (this.noContext) {
-        childContext = this.$context.extend({
-          $item: valuesToAdd[i],
-          $index: this.noIndex ? undefined : ko.observable()
-        });
-      } else {
-        childContext = this.$context.createChildContext(valuesToAdd[i], this.as || null, this.noIndex ? undefined : extendWithIndex);
-      }
-
-      // apply bindings first, and then process child nodes, because bindings can add childnodes
-      ko.applyBindingsToDescendants(childContext, templateClone);
+      // Apply bindings first, and then process child nodes,
+      // because bindings can add childnodes.
+      applyBindingsToDescendants(
+        this.generateContext(valuesToAdd[i]), templateClone
+      );
 
       childNodes = ko.virtualElements.childNodes(templateClone);
     }
@@ -459,7 +488,8 @@ ko.bindingHandlers.fastForEach = {
       ffe = new FastForEach({
         element: element,
         data: ko.unwrap(context.$rawData) === value ? context.$rawData : value,
-        $context: context
+        $context: context,
+        as: bindings.get('as')
       });
     }
 
