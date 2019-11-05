@@ -222,7 +222,7 @@ FastForEach.prototype.processQueue = function () {
 
 // Extend the given context with a $index (passed in via the createChildContext)
 function extendWithIndex(context) {
-  $context.$index = ko.observable();
+  context.$index = ko.observable();
 };
 
 
@@ -236,7 +236,7 @@ function extendWithIndex(context) {
  * @param  {bool} index Whether to calculate indexes
  * @return {function}   A function(dataValue) that returns the context
  */
-ForEach.prototype.createContextGenerator = function (as, index) {
+FastForEach.prototype.createContextGenerator = function (as, index) {
   var $context = this.$context;
   switch ((as && 1) | (index && 2)) {
   case 0: // no-as & no-index
@@ -258,7 +258,7 @@ ForEach.prototype.createContextGenerator = function (as, index) {
 
   case 3: // as + index
     return function(v) {
-      var obj = { $index: observable() };
+      var obj = { $index: ko.observable() };
       obj[as] = v;
       return $context.extend(obj);
     };
@@ -286,7 +286,7 @@ FastForEach.prototype.added = function (changeItem) {
 
       // Apply bindings first, and then process child nodes,
       // because bindings can add childnodes.
-      applyBindingsToDescendants(
+      ko.applyBindingsToDescendants(
         this.generateContext(valuesToAdd[i]), templateClone
       );
 
