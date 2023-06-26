@@ -4,7 +4,7 @@
 //
 // Employing sound techniques to make a faster Knockout foreach binding.
 // --------
-
+import * as ko from 'knockout';
 //      Utilities
 var MAX_LIST_SIZE = 9007199254740991;
 
